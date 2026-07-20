@@ -16,7 +16,7 @@ int main()
 			{
 				arr[i][j] = 0;
 			}
-			else 
+			else
 			{
 				arr[i][j] = count; //count를 1부터 1씩 증가시켜 차례대로 저장
 				count++;
@@ -28,7 +28,7 @@ int main()
 	{
 		for (int j = 0; j < 5; j++)
 		{
-			printf("%2d ", arr[i][j]); 
+			printf("%2d ", arr[i][j]);
 		}
 		printf("\n");
 	}
