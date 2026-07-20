@@ -73,6 +73,18 @@ int main()
         printf("\n");
 
     }
+    // 동적 할당했던 메모리 해제
+    for (int i = 0; i < n1; i++)
+    {
+        free(arr_A[i]);// 각 행에 할당했던 메모리 해제
+    }
+    free(arr_A);// 포인터 배열 자체의 메모리 해제
 
+    for (int i = 0; i < n1; i++)
+    }
+        free(arr_B[i]); // 각 행에 할당했던 메모리 해제
+    }
+    free(arr_B);// 포인터 배열 자체의 메모리 해제
+    
     return 0;
 }
