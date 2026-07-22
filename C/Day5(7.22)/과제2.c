@@ -23,7 +23,7 @@ int main()
 	col = sizeCol;
 
 	arr = (int**)malloc(sizeof(int*)*sizeRow);
-	for (int i = 0; i < sizeCol; i++)
+	for (int i = 0; i < sizeRow; i++)
 	{
 		arr[i] = (int*)malloc(sizeof(int) * sizeCol);
 	}
@@ -79,9 +79,17 @@ void arr_ij(int* sizeRow, int* sizeCol, int** pArr) //달팽이 만드는 함수
     참고해주시면 감사하겠습니다!
     */
 
-    for (int i = 0; i < *sizeRow; i++) { 
+    int min = 0;
+    
+    while(count <= (*sizeRow) * (*sizeCol)) { //전체 수가 사각형의 크기보다 작거나 같을 때까지 출력
+
         for (int j = start_1; j < end_1 + 1; j++) {
             pArr[stuck_i_1][j] = count;
+  
+            if (count >= (*sizeRow) * (*sizeCol))
+            {
+                return; //처음엔 break 썼었는데 어짜피 while 문으로 다시 가므로 return으로 바꿔 함수 자체를 끝냈습니다.
+            }
             count++;
         }
         start_1++;
@@ -91,6 +99,11 @@ void arr_ij(int* sizeRow, int* sizeCol, int** pArr) //달팽이 만드는 함수
 
         for (int j = start_2; j < end_2 + 1; j++) {
             pArr[j][stuck_j_2] = count;
+            
+            if (count >= (*sizeRow) * (*sizeCol))
+            {
+                return;
+            }
             count++;
         }
         start_2++;
@@ -99,6 +112,10 @@ void arr_ij(int* sizeRow, int* sizeCol, int** pArr) //달팽이 만드는 함수
 
         for (int j = start_3; j > end_3 - 1; j--) {
             pArr[stuck_i_3][j] = count;
+            if (count >= (*sizeRow) * (*sizeCol))
+            {
+                return;
+            }
             count++;
         }
         start_3--;
@@ -109,6 +126,10 @@ void arr_ij(int* sizeRow, int* sizeCol, int** pArr) //달팽이 만드는 함수
 
         for (int j = start_4; j > end_4; j--) {
             pArr[j][stuck_j_4] = count;
+            if (count >= (*sizeRow) * (*sizeCol))
+            {
+                return;
+            }
             count++;
         }
         start_4--;
