@@ -2,39 +2,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void arr_ij(int *row, int *col, int**pArr);
-void print(int *sizeRow, int*sizeCol, int**pArr);
+void arr_ij(int* row, int* col, int** pArr);
+void print(int* sizeRow, int* sizeCol, int** pArr);
 
 
-int main() 
+int main()
 {
-	int** arr = NULL;
-	int row, col, sizeRow, sizeCol;
+    int** arr = NULL;
+    int row, col, sizeRow, sizeCol;
 
-	printf("열의 수를 입력하세요: ");
-	scanf("%d", &sizeCol);
-	printf("행의 수를 입력하세요: ");
-	scanf("%d", &sizeRow);
+    printf("열의 수를 입력하세요: ");
+    scanf("%d", &sizeCol);
+    printf("행의 수를 입력하세요: ");
+    scanf("%d", &sizeRow);
 
-	row = sizeRow;
-	col = sizeCol;
+    row = sizeRow;
+    col = sizeCol;
 
-	arr = (int**)malloc(sizeof(int*)*sizeRow);
-	for (int i = 0; i < sizeCol; i++)
-	{
-		arr[i] = (int*)malloc(sizeof(int) * sizeCol);
-	}
+    arr = (int**)malloc(sizeof(int*) * sizeRow);
+    for (int i = 0; i < sizeCol; i++)
+    {
+        arr[i] = (int*)malloc(sizeof(int) * sizeCol);
+    }
 
-	arr_ij(&sizeRow, &sizeCol, arr);
+    arr_ij(&sizeRow, &sizeCol, arr);
 
-	print(&row, &col, arr);
+    print(&row, &col, arr);
 
-	for (int i = 0; i < row; i++)
-	{
-		free(arr[i]);
-	}
+    for (int i = 0; i < row; i++)
+    {
+        free(arr[i]);
+    }
 
-	return 0;
+    return 0;
 }
 
 void arr_ij(int* sizeRow, int* sizeCol, int** pArr) //달팽이 만드는 함수
@@ -99,10 +99,10 @@ void arr_ij(int* sizeRow, int* sizeCol, int** pArr) //달팽이 만드는 함수
 
 void print(int* row, int* col, int** pArr)
 {
-	for (int i = 0; i < *row; i++) {
-		for (int j = 0; j < *col; j++) {
-			printf("%4d", pArr[i][j]);
-		}
-		printf("\n");
-	}
+    for (int i = 0; i < *row; i++) {
+        for (int j = 0; j < *col; j++) {
+            printf("%4d", pArr[i][j]);
+        }
+        printf("\n");
+    }
 }
