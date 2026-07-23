@@ -2,20 +2,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct _Node
+typedef struct _Node //Node 구조체 선언
 {
     char data;
     struct _Node* next;
 } Node;
 
-typedef struct _Queue
+typedef struct _Queue //Queue 구조체 선언
 {
     Node* head;
     Node* tail;
     int size;
 } Queue;
 
-typedef struct _Stack
+typedef struct _Stack //Stack 구조체 선언
 {
     Node* top;
     int size;
@@ -87,12 +87,12 @@ void Enqueue(Queue* pQu, char c)
     s->data = c;
     s->next = NULL;
 
-    if (pQu->head == NULL)
+    if (pQu->head == NULL) //NULL이라는 것은 Node가 하나 밖에 안들어 온 것이기 때문에 head와 tail이 모두 같아야함.
     {
         pQu->head = s;
         pQu->tail = s;
     }
-    else
+    else  //아니라면 새로 추가 된 값을 tail로 할당
     {
         pQu->tail->next = s;
         pQu->tail = s;
@@ -102,14 +102,14 @@ void Enqueue(Queue* pQu, char c)
 
 int Dequeue(Queue* pQu, char* out)
 {
-    if (pQu->head == NULL)
+    if (pQu->head == NULL) //head가 NULL이면 하나 밖에 없는 것이므로 굳이 없애지 않아도 됨.
     {
         return 0;
     }
     Node* ptr = pQu->head;
     *out = ptr->data;
-    pQu->head = pQu->head->next;
-    if (pQu->head == NULL)
+    pQu->head = pQu->head->next; //여기서 head 변경
+    if (pQu->head == NULL) //head 변경 후 한번 더 확인
     {
         pQu->tail = NULL;
     }
