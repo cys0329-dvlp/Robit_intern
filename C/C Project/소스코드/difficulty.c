@@ -8,7 +8,7 @@
 
 void difficulty()
 {
-    //SUDOKU 출력 AI 사용
+    
     SetMousePoint(30, 10);
     printf(" ███████╗██╗   ██╗██████╗  ██████╗ ██╗  ██╗██╗   ██╗");
     SetMousePoint(30, 11);
