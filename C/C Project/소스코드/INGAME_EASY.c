@@ -11,34 +11,99 @@
 #define PANEL_X (BOARD_X + 40)
 #define PANEL_Y BOARD_Y
 
-int arr[9][9];
-int solution_EASY[9][9]; // 정답 배열 (빈칸으로 만들기 전, 완성된 답)
-int is_given_EASY[9][9]; // 원래 뚫려있던(=입력 가능한) 칸인지 표시
-int is_temp_EASY[9][9];  // 더블클릭으로 넣은 "임시 입력"인지 표시 (틀려도 감점 없음)
-int mistake_count_EASY;  // 틀린 횟수 (3번 틀리면 게임 종료)
+// ----- 구조체로 묶은 보드 데이터 (동적 할당) -----
+typedef struct {
+    int** arr;         // 현재 상태 (사용자 입력 포함)
+    int** solution;    // 정답 배열 (빈칸으로 만들기 전, 완성된 답)
+    int** is_given;    // 원래 뚫려있던(=입력 가능한) 칸인지 표시
+    int** is_temp;     // 더블클릭으로 넣은 "임시 입력"인지 표시 (틀려도 감점 없음)
+    int mistake_count; // 틀린 횟수 (3번 틀리면 게임 종료)
+} Board_EASY;
 
-int define_arr_EASY(int percent);
-int is_valid_EASY(int row, int col, int num);
+Board_EASY* create_board_EASY(void);
+void free_board_EASY(Board_EASY* b);
+
+int define_arr_EASY(Board_EASY* b, int percent);
+int is_valid_EASY(Board_EASY* b, int row, int col, int num);
 void shuffle_numbers_EASY(int nums[9]);
-int fill_board_EASY(int row, int col);
-void blind_EASY(int percent);
+int fill_board_EASY(Board_EASY* b, int row, int col);
+void blind_EASY(Board_EASY* b, int percent);
 
-// ----- 신규: 화면/입력 관련 함수 -----
+// ----- 화면/입력 관련 함수 -----
 int cell_content_x_EASY(int col);
 int cell_content_y_EASY(int row);
 void build_border_EASY(char* buf, int line_index);
-void draw_board_EASY(void);
-void draw_cell_EASY(int row, int col, int highlight); // highlight: 0=선택안됨, 1=정식입력 선택, 2=임시입력 선택
-void draw_panel_EASY(void);
-void reveal_solution_EASY(void);
+void draw_board_EASY(Board_EASY* b);
+void draw_cell_EASY(Board_EASY* b, int row, int col, int highlight); // highlight: 0=선택안됨, 1=정식입력 선택, 2=임시입력 선택
+void draw_panel_EASY(Board_EASY* b);
+void reveal_solution_EASY(Board_EASY* b);
+
+// 9x9 int** 하나를 동적 할당 (행 포인터 배열 + 각 행)
+static int** alloc_grid_9x9(void)
+{
+    int** grid = (int**)malloc(sizeof(int*) * 9);
+    if (!grid) return NULL;
+
+    for (int i = 0; i < 9; i++)
+    {
+        grid[i] = (int*)malloc(sizeof(int) * 9);
+        // 0으로 초기화
+        for (int j = 0; j < 9; j++)
+            grid[i][j] = 0;
+    }
+    return grid;
+}
+
+static void free_grid_9x9(int** grid)
+{
+    if (!grid) return;
+    for (int i = 0; i < 9; i++)
+        free(grid[i]);
+    free(grid);
+}
+
+// 보드 구조체 전체를 동적 할당해서 반환
+Board_EASY* create_board_EASY(void)
+{
+    Board_EASY* b = (Board_EASY*)malloc(sizeof(Board_EASY));
+    if (!b) return NULL;
+
+    b->arr = alloc_grid_9x9();
+    b->solution = alloc_grid_9x9();
+    b->is_given = alloc_grid_9x9();
+    b->is_temp = alloc_grid_9x9();
+    b->mistake_count = 0;
+
+    return b;
+}
+
+// 보드 구조체와 내부 동적 메모리를 모두 해제
+void free_board_EASY(Board_EASY* b)
+{
+    if (!b) return;
+
+    free_grid_9x9(b->arr);
+    free_grid_9x9(b->solution);
+    free_grid_9x9(b->is_given);
+    free_grid_9x9(b->is_temp);
+
+    free(b);
+}
 
 int INGAME_EASY()
 {
-    define_arr_EASY(40);
-    mistake_count_EASY = 0;
+    Board_EASY* board = create_board_EASY();
+    if (!board)
+    {
+        printf("메모리 할당 실패!\n");
+        return -1;
+    }
 
-    draw_board_EASY();
-    draw_panel_EASY();
+    define_arr_EASY(board, 40);
+    board->mistake_count = 0;
+
+    draw_board_EASY(board);
+    draw_panel_EASY(board);
 
     // 마우스 클릭 후 숫자 입력 기능 추가 (AI 사용)
     HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -80,15 +145,15 @@ int INGAME_EASY()
                     if (row >= 0 && row <= 8 && col >= 0 && col <= 8)
                     {
                         // 처음부터 채워져 있던 칸(is_given)은 선택 불가
-                        if (!is_given_EASY[row][col])
+                        if (!board->is_given[row][col])
                         {
                             if (sel_row != -1 && sel_col != -1)
-                                draw_cell_EASY(sel_row, sel_col, 0); // 이전 선택 강조 해제
+                                draw_cell_EASY(board, sel_row, sel_col, 0); // 이전 선택 강조 해제
 
                             sel_row = row;
                             sel_col = col;
                             sel_temp = is_double;
-                            draw_cell_EASY(sel_row, sel_col, sel_temp ? 2 : 1); // 새 선택 강조
+                            draw_cell_EASY(board, sel_row, sel_col, sel_temp ? 2 : 1); // 새 선택 강조
                         }
                     }
                 }
@@ -108,32 +173,32 @@ int INGAME_EASY()
                 // 숫자 1~9 입력 -> 값 채우기
                 if (key.wVirtualKeyCode >= '1' && key.wVirtualKeyCode <= '9')
                 {
-                    arr[sel_row][sel_col] = (char)key.wVirtualKeyCode;
+                    board->arr[sel_row][sel_col] = (char)key.wVirtualKeyCode;
 
                     if (sel_temp)
                     {
                         // 임시 입력: 틀려도 틀린 횟수에 포함 안 됨
-                        is_temp_EASY[sel_row][sel_col] = 1;
-                        draw_cell_EASY(sel_row, sel_col, 2);
-                        draw_panel_EASY();
+                        board->is_temp[sel_row][sel_col] = 1;
+                        draw_cell_EASY(board, sel_row, sel_col, 2);
+                        draw_panel_EASY(board);
                     }
                     else
                     {
                         // 정식 입력: 틀리면 틀린 횟수 증가
-                        is_temp_EASY[sel_row][sel_col] = 0;
+                        board->is_temp[sel_row][sel_col] = 0;
 
-                        if (arr[sel_row][sel_col] != solution_EASY[sel_row][sel_col])
+                        if (board->arr[sel_row][sel_col] != board->solution[sel_row][sel_col])
                         {
-                            mistake_count_EASY++;
+                            board->mistake_count++;
                         }
 
-                        draw_cell_EASY(sel_row, sel_col, 1);
-                        draw_panel_EASY();
+                        draw_cell_EASY(board, sel_row, sel_col, 1);
+                        draw_panel_EASY(board);
 
-                        if (mistake_count_EASY >= 3)
+                        if (board->mistake_count >= 3)
                         {
-                            reveal_solution_EASY();
-                            draw_panel_EASY();
+                            reveal_solution_EASY(board);
+                            draw_panel_EASY(board);
                             SetMousePoint(BOARD_X, BOARD_Y + 20);
                             printf("3번 틀려서 게임 종료! 정답을 공개합니다. 아무 키나 누르면 돌아갑니다.   ");
                             _getch();
@@ -146,15 +211,16 @@ int INGAME_EASY()
                     key.wVirtualKeyCode == VK_BACK ||
                     key.wVirtualKeyCode == VK_DELETE)
                 {
-                    arr[sel_row][sel_col] = ' ';
-                    is_temp_EASY[sel_row][sel_col] = 0;
-                    draw_cell_EASY(sel_row, sel_col, sel_temp ? 2 : 1);
-                    draw_panel_EASY();
+                    board->arr[sel_row][sel_col] = ' ';
+                    board->is_temp[sel_row][sel_col] = 0;
+                    draw_cell_EASY(board, sel_row, sel_col, sel_temp ? 2 : 1);
+                    draw_panel_EASY(board);
                 }
             }
         }
     }
 
+    free_board_EASY(board); // 동적 할당 해제
     return 0;
 }
 
@@ -200,7 +266,7 @@ void build_border_EASY(char* buf, int line_index)
 }
 
 // 보드 전체를 한 번 그림 (SetMousePoint로 각 줄 위치를 지정해서 출력)
-void draw_board_EASY(void)
+void draw_board_EASY(Board_EASY* b)
 {
     char border_line[200];
 
@@ -217,7 +283,7 @@ void draw_board_EASY(void)
             for (int c = 0; c < 9; c++)
             {
                 int right_boundary_thick = ((c + 1) % 3 == 0); // 칸 c 오른쪽 경계
-                printf(" %c %s", arr[i][c], right_boundary_thick ? "║" : "│");
+                printf(" %c %s", b->arr[i][c], right_boundary_thick ? "║" : "│");
             }
         }
     }
@@ -228,7 +294,7 @@ void draw_board_EASY(void)
 // - 정식 입력이 정답과 다름: 빨간색
 // - 임시 입력(더블클릭으로 넣은 값): 색 구분을 위해 청록색, 틀려도 틀린 횟수에 영향 없음
 // highlight: 0=선택 안 됨, 1=정식 입력으로 선택됨(초록 배경), 2=임시 입력으로 선택됨(보라 배경)
-void draw_cell_EASY(int row, int col, int highlight)
+void draw_cell_EASY(Board_EASY* b, int row, int col, int highlight)
 {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     SetMousePoint(cell_content_x_EASY(col), cell_content_y_EASY(row));
@@ -238,52 +304,52 @@ void draw_cell_EASY(int row, int col, int highlight)
     WORD temp_color = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY; // 임시 입력(청록색)
     WORD color = default_color;
 
-    if (!is_given_EASY[row][col] && arr[row][col] != ' ' && arr[row][col] != 0)
+    if (!b->is_given[row][col] && b->arr[row][col] != ' ' && b->arr[row][col] != 0)
     {
-        if (is_temp_EASY[row][col])
+        if (b->is_temp[row][col])
             color = temp_color; // 임시 입력은 맞고 틀리고 상관없이 구분되는 색으로만 표시
-        else if (arr[row][col] != solution_EASY[row][col])
+        else if (b->arr[row][col] != b->solution[row][col])
             color = wrong_color; // 정식 입력인데 정답과 다름
     }
 
     if (highlight == 1)
     {
         SetConsoleTextAttribute(hOut, BACKGROUND_GREEN | BACKGROUND_INTENSITY | color | FOREGROUND_INTENSITY);
-        printf("%c", arr[row][col]);
+        printf("%c", b->arr[row][col]);
         SetConsoleTextAttribute(hOut, default_color);
     }
     else if (highlight == 2)
     {
         SetConsoleTextAttribute(hOut, BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_INTENSITY | color | FOREGROUND_INTENSITY);
-        printf("%c", arr[row][col]);
+        printf("%c", b->arr[row][col]);
         SetConsoleTextAttribute(hOut, default_color);
     }
     else
     {
         SetConsoleTextAttribute(hOut, color);
-        printf("%c", arr[row][col]);
+        printf("%c", b->arr[row][col]);
         SetConsoleTextAttribute(hOut, default_color);
     }
 }
 
 // 3번 틀려서 게임이 끝났을 때, 보드 전체를 정답으로 채워서 공개함
-void reveal_solution_EASY(void)
+void reveal_solution_EASY(Board_EASY* b)
 {
     for (int i = 0; i < 9; i++)
         for (int j = 0; j < 9; j++)
-            arr[i][j] = solution_EASY[i][j];
+            b->arr[i][j] = b->solution[i][j];
 
-    draw_board_EASY();
+    draw_board_EASY(b);
 }
 
 // 오른쪽에 1~9 숫자별 남은 개수와 틀린 횟수를 실시간으로 표시
-void draw_panel_EASY(void)
+void draw_panel_EASY(Board_EASY* b)
 {
     int count[10] = { 0 };
     for (int r = 0; r < 9; r++)
         for (int c = 0; c < 9; c++)
-            if (arr[r][c] >= '1' && arr[r][c] <= '9')
-                count[arr[r][c] - '0']++;
+            if (b->arr[r][c] >= '1' && b->arr[r][c] <= '9')
+                count[b->arr[r][c] - '0']++;
 
     SetMousePoint(PANEL_X, PANEL_Y - 1);
     printf("[남은 숫자]      ");
@@ -295,33 +361,33 @@ void draw_panel_EASY(void)
     }
 
     SetMousePoint(PANEL_X, PANEL_Y + 11);
-    printf("틀린 횟수 : %d / 3   ", mistake_count_EASY);
+    printf("틀린 횟수 : %d / 3   ", b->mistake_count);
 }
 
 // 여기부터 AI 다시 공부(okkyuns0329@gmail.com 기록됨)
-int define_arr_EASY(int percent) {
+int define_arr_EASY(Board_EASY* b, int percent) {
 
     for (int i = 0; i < 9; i++)
         for (int j = 0; j < 9; j++)
         {
-            arr[i][j] = 0; // 배열 초기화
-            is_given_EASY[i][j] = 1; // 일단 전부 채워지는 칸으로 표시
-            is_temp_EASY[i][j] = 0;  // 임시 입력 표시도 초기화
+            b->arr[i][j] = 0;      // 배열 초기화
+            b->is_given[i][j] = 1; // 일단 전부 채워지는 칸으로 표시
+            b->is_temp[i][j] = 0;  // 임시 입력 표시도 초기화
         }
 
     srand(time(NULL));
-    fill_board_EASY(0, 0); // 원래 있던 rand() 이중 for문을 이 한 줄로 교체
+    fill_board_EASY(b, 0, 0); // 원래 있던 rand() 이중 for문을 이 한 줄로 교체
 
     // 빈칸으로 만들기 전에, 완성된 정답을 solution 배열에 복사해둠
     for (int i = 0; i < 9; i++)
         for (int j = 0; j < 9; j++)
-            solution_EASY[i][j] = arr[i][j];
+            b->solution[i][j] = b->arr[i][j];
 
-    blind_EASY(percent);
+    blind_EASY(b, percent);
     return 0;
 }
 
-void blind_EASY(int percent)
+void blind_EASY(Board_EASY* b, int percent)
 {
     int blank_count = (int)(81 * percent / 100.0); // 40퍼센트
 
@@ -339,24 +405,24 @@ void blind_EASY(int percent)
     for (int k = 0; k < blank_count; k++) {
         int row = positions[k] / 9;
         int col = positions[k] % 9;
-        arr[row][col] = ' ';
-        is_given_EASY[row][col] = 0; // 빈칸 -> 사용자가 입력 가능
+        b->arr[row][col] = ' ';
+        b->is_given[row][col] = 0; // 빈칸 -> 사용자가 입력 가능
     }
 }
 
 // (row, col)에 num을 넣어도 되는지 행 / 열 / 박스 검사
-int is_valid_EASY(int row, int col, int num) {
+int is_valid_EASY(Board_EASY* b, int row, int col, int num) {
     for (int j = 0; j < 9; j++) {
-        if (arr[row][j] == num + '0') return 0; // 같은 행에 이미 있음
+        if (b->arr[row][j] == num + '0') return 0; // 같은 행에 이미 있음
     }
     for (int i = 0; i < 9; i++) {
-        if (arr[i][col] == num + '0') return 0; // 같은 열에 이미 있음
+        if (b->arr[i][col] == num + '0') return 0; // 같은 열에 이미 있음
     }
     int box_row = (row / 3) * 3;
     int box_col = (col / 3) * 3;
     for (int i = box_row; i < box_row + 3; i++) {
         for (int j = box_col; j < box_col + 3; j++) {
-            if (arr[i][j] == num + '0') return 0; // 같은 3x3 박스에 이미 있음
+            if (b->arr[i][j] == num + '0') return 0; // 같은 3x3 박스에 이미 있음
         }
     }
     return 1;
@@ -374,7 +440,7 @@ void shuffle_numbers_EASY(int nums[9]) {
 }
 
 // 원래 코드의 rand() 채우기 이중 for문을 대체하는 백트래킹 함수
-int fill_board_EASY(int row, int col) {
+int fill_board_EASY(Board_EASY* b, int row, int col) {
     if (row == 9) return 1; // 9행까지 다 채웠으면 완성
 
     int next_row = (col == 8) ? row + 1 : row;
@@ -385,10 +451,10 @@ int fill_board_EASY(int row, int col) {
 
     for (int k = 0; k < 9; k++) {
         int num = nums[k];
-        if (is_valid_EASY(row, col, num)) {
-            arr[row][col] = '0' + num; // 이렇게 저장하면 arr에 이미 문자 코드로 들어감
-            if (fill_board_EASY(next_row, next_col)) return 1;
-            arr[row][col] = 0; // 실패하면 되돌리기(backtrack)
+        if (is_valid_EASY(b, row, col, num)) {
+            b->arr[row][col] = '0' + num; // 이렇게 저장하면 arr에 이미 문자 코드로 들어감
+            if (fill_board_EASY(b, next_row, next_col)) return 1;
+            b->arr[row][col] = 0; // 실패하면 되돌리기(backtrack)
         }
     }
     return 0; // 1~9 다 시도해도 안 되면 이전 칸으로 실패 알림
