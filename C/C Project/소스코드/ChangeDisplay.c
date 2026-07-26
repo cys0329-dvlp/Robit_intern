@@ -43,7 +43,7 @@ int ChangeDisplay()
                 if ((20 <= mouse.dwMousePosition.X && mouse.dwMousePosition.X <= 30) && (19 <= mouse.dwMousePosition.Y && mouse.dwMousePosition.Y <= 21))
                 {
                     reset_console();
-                    difficulty(); //AI 사용
+                    difficulty(); 
                     ChangeDifficulty();
                 }
                 //기록
