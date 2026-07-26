@@ -6,7 +6,7 @@
 #include <conio.h>
 
 
-int ChangeDifficulty() //AI 사용. 일단 다음 단계 진행 후 다시 직접 짜기
+int ChangeDifficulty() 
 {
     HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
     DWORD mode;
